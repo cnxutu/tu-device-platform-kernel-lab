@@ -5,22 +5,76 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>历史视频投影回放 Demo</title>
   <style>
-    html, body, #app { margin: 0; height: 100%; font-family: sans-serif; }
-    #app { display: grid; grid-template-columns: 340px 1fr; }
-    aside { padding: 16px; background: #172332; color: #fff; overflow: auto; }
-    video { width: 100%; background: #000; }
-    button { margin: 4px 5px 4px 0; padding: 7px 10px; cursor: pointer; }
+    html, body, #app { margin: 0; height: 100%; font-family: system-ui, sans-serif; }
+    body { background: #0f1d2c; color: #e6f0f8; }
+    #app { display: grid; grid-template-columns: minmax(320px, 360px) 1fr; }
+    aside { padding: 22px; background: #172332; overflow: auto; box-shadow: 8px 0 24px #0003; z-index: 1; }
+    h1 { font-size: 20px; margin: 0 0 6px; }
+    .subtitle, #telemetry { color: #a8bed0; font-size: 13px; line-height: 1.6; }
+    .subtitle { margin: 0 0 24px; }
+    .section-label { display: block; margin: 20px 0 10px; font-size: 13px; color: #8fa9bd; }
+    button { padding: 8px 12px; cursor: pointer; color: #e6f0f8; background: #29415a; border: 1px solid #44617b; border-radius: 6px; }
+    button.primary { background: #007e9e; border-color: #34d2ee; }
+    button:disabled { opacity: .45; cursor: default; }
+    .follow { display: flex; align-items: center; gap: 10px; margin: 12px 0 4px; font-size: 13px; color: #e6f0f8; cursor: pointer; }
+    #follow-drone { appearance: none; width: 38px; height: 22px; margin: 0; border-radius: 11px; background: #526779; cursor: pointer; transition: background .2s; }
+    #follow-drone::before { content: ''; display: block; width: 16px; height: 16px; margin: 3px; border-radius: 50%; background: #fff; transition: transform .2s; }
+    #follow-drone:checked { background: #008eac; }
+    #follow-drone:checked::before { transform: translateX(16px); }
+    #follow-drone:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+    .view-hint { margin: 0 0 10px; color: #8fa9bd; font-size: 12px; }
+    .map-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; color: #b9d2e4; font-size: 12px; }
+    .map-legend span { display: inline-flex; align-items: center; gap: 5px; }
+    .map-legend i { display: inline-block; width: 20px; border-top: 3px solid; }
+    .map-legend .trail { border-color: #ffad43; }
+    .map-legend .border { border-color: #34d2ee; }
+    .map-legend .ray { border-color: #85b8ef; border-top-style: dashed; }
+    .slider { width: 100%; accent-color: #34d2ee; }
+    .time-row { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: #b9d2e4; }
+    .controls { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+    .controls button { padding: 6px 9px; }
+    video { width: 100%; background: #000; border-radius: 6px; }
     #status { white-space: pre-wrap; line-height: 1.5; }
-    #map { min-width: 0; }
+    #map { min-width: 0; min-height: 0; }
+    @media (max-width: 800px) {
+      #app { grid-template-columns: 1fr; grid-template-rows: auto minmax(420px, 1fr); min-height: 100%; height: auto; }
+      aside { padding: 16px; }
+    }
   </style>
 </head>
 <body>
   <div id="app">
     <aside>
-      <h2>历史视频投影回放</h2>
-      <div id="segments"></div>
+      <h1>历史视频投影回放</h1>
+      <p class="subtitle">本地视频 · SRT 视锥数据 · Cesium 地图</p>
+      <span class="section-label">完整视频 · drone-video-all</span>
+      <label class="follow"><input id="follow-drone" type="checkbox" role="switch" checked /><span id="follow-label">自动居中</span></label>
+      <p class="view-hint">关闭后可自由拖动、缩放和旋转地图</p>
+      <div class="map-legend" aria-label="地图线条图例">
+        <span><i class="trail"></i>航线</span>
+        <span><i class="border"></i>投影边框</span>
+        <span><i class="ray"></i>视锥连线</span>
+      </div>
+      <span class="section-label">视频时间线（拖动视频进度条）</span>
       <video id="video" controls playsinline crossorigin="anonymous"></video>
+      <div class="time-row"><span>视频</span><span id="video-time">00:00.000</span></div>
+      <span class="section-label">OSD 时间线（独立拖动）</span>
+      <input id="osd-slider" class="slider" type="range" min="0" max="1" step="10" value="0" aria-label="OSD 时间线" />
+      <div class="time-row"><span>OSD</span><span id="osd-time">00:00.000</span></div>
+      <div class="controls">
+        <button data-osd-step="-1000">−1 秒</button>
+        <button data-osd-step="-100">−0.1 秒</button>
+        <button data-osd-step="100">+0.1 秒</button>
+        <button data-osd-step="1000">+1 秒</button>
+      </div>
+      <div class="controls">
+        <button id="align-now" class="primary">将当前 OSD 对齐视频</button>
+        <button id="unlink" disabled>解除联动</button>
+      </div>
+      <p id="alignment" class="subtitle">分别拖动两条时间线，找到同一画面后点击对齐。</p>
+      <p id="calibration" class="subtitle"></p>
       <p id="status">读取分片清单中…</p>
+      <p id="telemetry"></p>
     </aside>
     <main id="map"></main>
   </div>
