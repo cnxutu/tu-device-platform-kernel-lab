@@ -1,0 +1,29 @@
+{
+  "droneSn": "DEMO-DRONE",
+  "originalVideoStartMs": 1700000000000,
+  "frameHfovDeg": 60,
+  "frameVfovDeg": 40,
+  "pitchTransitionDeg": -60,
+  "pitchHysteresisDeg": 1,
+  "yawOffsetDeg": 0,
+  "rollOffsetDeg": 0,
+  "rollDirection": 1,
+  "segments": [
+    {
+      "id": "segment-01",
+      "videoFile": "segment-01.mp4",
+      "sourceStartMs": 0,
+      "sourceEndMs": 150000,
+      "durationMs": 150000,
+      "syncOffsetMs": 0
+    },
+    {
+      "id": "segment-02",
+      "videoFile": "segment-02.mp4",
+      "sourceStartMs": 150000,
+      "sourceEndMs": 300000,
+      "durationMs": 150000,
+      "syncOffsetMs": 0
+    }
+  ]
+}

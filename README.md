@@ -7,6 +7,7 @@
 | 模块 | 责任 |
 | --- | --- |
 | `device-platform-thing-model` | 物模型能力定义、消息标准化、内核校验、协议适配与场景模拟 |
+| `device-platform-video-projection-replay` | 从 DJI DRC OSD 生成分片 SRT，并提供历史视频投影回放前端 Demo |
 
 ## 构建与运行
 
@@ -22,4 +23,3 @@ java -cp device-platform-thing-model/target/classes com.tu.deviceplatform.thingm
 ## 演进方式
 
 后续新增能力时，优先新增独立 Maven 子模块；例如视频流平台、设备状态投影或消息可靠性，都应通过明确的模块依赖接入，而不是堆叠进物模型内核。
-

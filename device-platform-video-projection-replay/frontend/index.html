@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>历史视频投影回放 Demo</title>
+  <style>
+    html, body, #app { margin: 0; height: 100%; font-family: sans-serif; }
+    #app { display: grid; grid-template-columns: 340px 1fr; }
+    aside { padding: 16px; background: #172332; color: #fff; overflow: auto; }
+    video { width: 100%; background: #000; }
+    button { margin: 4px 5px 4px 0; padding: 7px 10px; cursor: pointer; }
+    #status { white-space: pre-wrap; line-height: 1.5; }
+    #map { min-width: 0; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <aside>
+      <h2>历史视频投影回放</h2>
+      <div id="segments"></div>
+      <video id="video" controls playsinline crossorigin="anonymous"></video>
+      <p id="status">读取分片清单中…</p>
+    </aside>
+    <main id="map"></main>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

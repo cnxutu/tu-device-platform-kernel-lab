@@ -13,6 +13,7 @@
 
     <modules>
         <module>device-platform-thing-model</module>
+        <module>device-platform-video-projection-replay</module>
     </modules>
 
     <properties>
@@ -43,4 +44,3 @@
         </pluginManagement>
     </build>
 </project>
-

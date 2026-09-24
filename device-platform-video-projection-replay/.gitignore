@@ -1,0 +1,6 @@
+target/
+frontend/node_modules/
+frontend/dist/
+frontend/public/demo/
+data/*.sqlite3
+data/*.sqlite3-*
