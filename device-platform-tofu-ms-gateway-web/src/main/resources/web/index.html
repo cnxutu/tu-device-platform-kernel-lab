@@ -5,14 +5,15 @@
 <main>
   <header><div><div class="eyebrow">DEVICE CONTROL LAB</div><h1>TOFU MS <span>网关联调</span></h1><p>下发物模型服务，观察设备属性与协议反馈。</p></div><div class="header-actions"><span id="connection" class="pill">未连接</span><button id="stop-all" class="danger" disabled>全部停止</button></div></header>
   <section class="card target-card" aria-labelledby="target-title"><div class="section-heading"><h2 id="target-title">连接目标</h2><span id="target-kind" class="muted">填写目标后连接</span></div>
-    <form id="connect-form"><label>设备 IP / 主机<input id="host" name="host" value="127.0.0.1" required autocomplete="off"></label><label>TCP 端口<input id="port" name="port" type="number" min="1" max="65535" value="8089" required></label><label>云台地址<input id="address" name="address" type="number" min="1" max="255" value="1" required></label><button id="connect" type="submit" class="primary">连接设备</button><button id="disconnect" type="button" disabled>停止并断开</button></form>
+    <form id="connect-form"><label>链路模式<select id="mode"><option value="embedded">原模式 · 内嵌网关</option><option value="remote">独立 IoT 网关服务</option></select></label><label>设备 IP / 主机<input id="host" name="host" value="127.0.0.1" required autocomplete="off"></label><label>TCP 端口<input id="port" name="port" type="number" min="1" max="65535" value="8089" required></label><label>云台地址<input id="address" name="address" type="number" min="1" max="255" value="1" required></label><button id="connect" type="submit" class="primary">连接设备</button><button id="disconnect" type="button" disabled>停止并断开</button></form>
+    <p id="gateway-status" class="hint">独立网关尚未启用</p>
     <p class="hint">回环地址可连接本地模拟设备；填写实际设备地址即可进行实机控制。连接只维护心跳和接收状态，运动由你点击下发。</p>
   </section>
   <div id="notice" role="status" aria-live="polite">正在加载物模型…</div>
   <section aria-labelledby="services-title"><div class="section-heading"><h2 id="services-title">服务 <small>下行控制</small></h2><span id="motion" class="muted">等待连接</span></div><div id="services" class="services"></div><p class="hint">每次运动都指定持续时间，后台到时发送停止；多个页面共享一个控制状态。SENT 表示 TCP 写入成功，实际动作请通过已有视频观察。</p></section>
   <section class="card" aria-labelledby="properties-title"><div class="section-heading"><h2 id="properties-title">属性 <small>只读状态</small></h2><span id="property-time" class="muted">尚未收到状态</span></div><div id="properties" class="properties"></div><p class="hint">只展示设备实际上报的数据，未上报字段保留为空；每项标记最近接收时间，离线后保留最后观测值。</p></section>
-  <section class="card" aria-labelledby="events-title"><div class="section-heading"><h2 id="events-title">事件 <small>协议 ACK</small></h2><code id="event-id"></code></div><div id="ack" class="ack">尚未收到协议反馈</div><p class="hint">ACK 没有请求编号，与服务结果独立展示；正常 ACK 不代表机械动作已完成。</p></section>
+  <section class="card" aria-labelledby="events-title"><div class="section-heading"><h2 id="events-title">事件 <small>协议 ACK</small></h2><code id="event-id"></code></div><div id="ack" class="ack">尚未收到协议反馈</div><p class="hint">设备 ACK 不携带原请求编号，网关补充的消息 ID 不与服务结果关联；正常 ACK 不代表机械动作已完成。</p></section>
   <section class="card journal" aria-labelledby="journal-title"><div class="section-heading"><h2 id="journal-title">收发记录</h2><label class="filter">查看<select id="filter"><option value="commands">指令与结果</option><option value="ACK">ACK 事件</option><option value="PROPERTY">属性上报</option><option value="frames">TCP 报文</option><option value="all">全部记录</option></select></label></div><p class="hint">最近 1000 条记录保存在本进程内存中，页面每 500 毫秒同步。展开记录可检查完整消息和十六进制帧。</p><div id="records" class="records"></div></section>
-  <footer>本地网关核心联调 · 平台边界使用内存实现 · 视频独立接入</footer>
+  <footer>可切换内嵌网关与独立 IoT 网关服务 · 视频独立接入</footer>
 </main>
 </body></html>

@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.*;
 
 /** Real Custom gateway/adapter route with explicit, in-memory platform boundaries. */
-public final class GatewayControlTransport implements OpticalControlTransport {
+public final class GatewayControlTransport implements LabControlTransport {
     private static final long DEVICE_ID = 7001L;
     private static final String PRODUCT_KEY = "lab-optical", DEVICE_NAME = "lab-gateway-camera";
     private final ObjectMapper mapper;

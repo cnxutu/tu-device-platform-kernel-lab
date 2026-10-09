@@ -8,13 +8,17 @@ import java.util.concurrent.CountDownLatch;
 public final class TofuMsGatewayWebMain {
     private TofuMsGatewayWebMain() { }
     public static void main(String[] args) throws Exception {
-        if (args.length < 1 || args.length > 2 || "--help".equals(args[0])) {
-            System.out.println("Usage: TofuMsGatewayWebMain <TOFU-MS.json path> [httpPort=18090]");
+        if (args.length < 1 || args.length > 3 || "--help".equals(args[0])) {
+            System.out.println("Usage: TofuMsGatewayWebMain <TOFU-MS.json path> [httpPort=18090] [--redis-port=16379]");
             return;
         }
-        int port = args.length == 2 ? Integer.parseInt(args[1]) : 18090;
+        int port = args.length >= 2 ? Integer.parseInt(args[1]) : 18090;
         if (port < 1 || port > 65535) { throw new IllegalArgumentException("HTTP port 1..65535 required"); }
         try (GatewayWebLab lab = new GatewayWebLab(Paths.get(args[0])); GatewayWebServer server = new GatewayWebServer(lab, port)) {
+            if (args.length == 3) {
+                if (!args[2].matches("--redis-port=[0-9]{1,5}")) { throw new IllegalArgumentException("Expected --redis-port=<port>"); }
+                lab.enableRemote(Integer.parseInt(args[2].substring(13)));
+            }
             Thread hook = new Thread(server::close, "tofu-web-shutdown"); Runtime.getRuntime().addShutdownHook(hook);
             System.out.println("TOFU_MS_GATEWAY_WEB http://127.0.0.1:" + server.port() + "/");
             System.out.println("No target connected. Choose a target in the browser; TCP write and ACK do not confirm physical execution.");

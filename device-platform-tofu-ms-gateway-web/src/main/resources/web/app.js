@@ -35,9 +35,15 @@ function renderCatalog() {
     const actions = element('div', undefined, 'actions');
     const actionSpec = service.inputParams.find(input => input.identifier === 'action');
     const definitions = actionSpec.dataSpecsList.filter(item => Number(item.value) !== 0);
-    if (service.identifier === 'ptz_control') definitions.sort((a,b) => [5,3,7,1,2,6,4,8].indexOf(Number(a.value)) - [5,3,7,1,2,6,4,8].indexOf(Number(b.value)));
+    const ptzLayout = [5,3,7,1,null,2,6,4,8];
+    if (service.identifier === 'ptz_control') definitions.sort((a,b) => ptzLayout.indexOf(Number(a.value)) - ptzLayout.indexOf(Number(b.value)));
     for (const definition of definitions) {
       const button = element('button', definition.name); button.type = 'button'; button.className = 'move';
+      if (service.identifier === 'ptz_control') {
+        const position = ptzLayout.indexOf(Number(definition.value));
+        button.style.gridRow = String(Math.floor(position / 3) + 1);
+        button.style.gridColumn = String(position % 3 + 1);
+      }
       button.addEventListener('click', () => {
         if (!duration.input.reportValidity() || (speed && !speed.input.reportValidity())) return;
         const params = {channelId:'1', action:Number(definition.value)}; if (speed) params.speedPercent = Number(speed.input.value);
@@ -60,11 +66,16 @@ function renderCatalog() {
 function updateControls() {
   $('connect').disabled = busy || state.connected; $('disconnect').disabled = busy || !state.connected;
   $('stop-all').disabled = !state.connected;
-  for (const id of ['host','port','address']) $(id).disabled = state.connected || busy;
+  for (const id of ['host','port','address','mode']) $(id).disabled = state.connected || busy;
+  $('mode').querySelector('[value="remote"]').disabled = !state.remoteEnabled;
   document.querySelectorAll('.move').forEach(button => button.disabled = busy || !state.online || state.motionActive);
   document.querySelectorAll('.scope-stop').forEach(button => button.disabled = !state.connected);
 }
 function updateState() {
+  if (state.connected) $('mode').value = state.mode;
+  const gateway = state.gateway;
+  $('gateway-status').textContent = !state.remoteEnabled ? '独立网关尚未启用；启动时配置 Redis 端口可启用。' :
+    (gateway?.ready ? '独立网关已就绪' : '等待独立网关启动 / 心跳超时') + ' · ' + gateway.protocolCodecId + ' · ' + (gateway.serverId || '尚未注册');
   $('connection').textContent = state.online ? '设备在线' : state.connected ? '等待上线 / 离线' : '未连接';
   $('connection').className = 'pill' + (state.online ? ' online' : state.connected ? ' offline' : '');
   $('motion').textContent = state.motionActive ? '运动进行中或停止未确认，请查看记录' : state.online ? '可以下发指令' : '等待连接上线';
@@ -129,7 +140,7 @@ async function pollOnce() {
   if (state.events.length) { history = [...history, ...state.events].filter((record, i, all) => i === 0 || record.sequence !== all[i - 1].sequence).slice(-1000); renderRecords(); }
   cursor = state.cursor; updateState();
 }
-$('connect-form').addEventListener('submit', event => { event.preventDefault(); history = []; cursor = 0; action('/api/connect', {host:$('host').value.trim(), port:Number($('port').value), ptzAddress:Number($('address').value)}, '配置同步已接受，等待心跳确认设备上线。'); });
+$('connect-form').addEventListener('submit', event => { event.preventDefault(); history = []; cursor = 0; action('/api/connect', {mode:$('mode').value, host:$('host').value.trim(), port:Number($('port').value), ptzAddress:Number($('address').value)}, '配置同步已接受，等待心跳确认设备上线。'); });
 $('disconnect').addEventListener('click', () => action('/api/disconnect', {}, '已停止并断开目标连接。'));
 $('stop-all').addEventListener('click', () => action('/api/stop', {}, '三个执行器的停止指令已写入 TCP。', true));
 $('filter').addEventListener('change', renderRecords);

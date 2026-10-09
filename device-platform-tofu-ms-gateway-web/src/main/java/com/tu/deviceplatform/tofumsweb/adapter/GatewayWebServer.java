@@ -7,6 +7,7 @@ import com.tu.deviceplatform.tofumsweb.core.GatewayWebLab;
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -53,6 +54,10 @@ public final class GatewayWebServer implements AutoCloseable {
                 throw new IllegalArgumentException("application/json required");
             }
             JsonNode body = lab.mapper().readTree(readLimited(exchange.getRequestBody(), MAX_BODY));
+            if (path.startsWith("/rpc-api/iot/")) {
+                Map<String, Object> reply = new java.util.LinkedHashMap<>(); reply.put("code", 0); reply.put("msg", "");
+                reply.put("data", lab.platformRpc(path, body)); json(exchange, 200, reply); return;
+            }
             if (body == null || !body.isObject()) { throw new IllegalArgumentException("JSON object required"); }
             switch (path) {
                 case "/api/connect": json(exchange, 200, lab.connect(body)); return;

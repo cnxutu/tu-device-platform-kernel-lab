@@ -98,7 +98,7 @@ public final class TimedOpticalControl implements AutoCloseable {
         }
     }
     @Override public synchronized void close() {
-        if (closed) { return; } closed = true;
+        if (closed) { return; }
         Future<?> cleanup = worker.submit(() -> {
             try { stopActive(); }
             catch (RuntimeException e) { output.accept("STOP_FAILED on exit: " + e.getMessage() + "; physical motion may continue"); }
@@ -106,6 +106,7 @@ public final class TimedOpticalControl implements AutoCloseable {
         try { cleanup.get(7000, TimeUnit.MILLISECONDS); }
         catch (InterruptedException e) { Thread.currentThread().interrupt(); output.accept("Cleanup interrupted; STOP unconfirmed"); }
         catch (ExecutionException | TimeoutException e) { output.accept("Cleanup failed; STOP unconfirmed: " + e.getClass().getSimpleName()); }
-        finally { worker.shutdownNow(); client.close(); }
+        // Retain the worker and reservation if remote cleanup fails, so an explicit retry remains possible.
+        client.close(); closed = true; worker.shutdownNow();
     }
 }
