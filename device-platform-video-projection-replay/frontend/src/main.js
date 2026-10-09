@@ -1,6 +1,6 @@
 import * as Cesium from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
-import aircraftImage from './assets/drone-top.png';
+import aircraftModel from './assets/drone.glb?url';
 
 const viewer = new Cesium.Viewer('map', {
   animation: false,
@@ -38,7 +38,6 @@ let activeCues = [];
 let activeCueIndex = -1;
 let footprint;
 let aircraft;
-let aircraftHeadingDeg = null;
 let frameBorder;
 let frustumLines = [];
 let trail;
@@ -47,6 +46,26 @@ let osdCursorMs = 0;
 let offsetMs = 0;
 let linked = false;
 const calibrationKey = 'projection-replay:drone-video-all:offset-ms';
+function aircraftPulse() {
+  // Use wall time so the highlight keeps breathing when the video is paused.
+  return (1 - Math.cos(performance.now() * Cesium.Math.TWO_PI / 2400)) / 2;
+}
+
+const aircraftShader = new Cesium.CustomShader({
+  lightingModel: Cesium.LightingModel.UNLIT,
+  uniforms: {
+    u_pulse: { type: Cesium.UniformType.FLOAT, value: 0 }
+  },
+  fragmentShaderText: `
+    void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
+      float highlight = smoothstep(0.35, 0.7, u_pulse);
+      material.diffuse = mix(material.diffuse, vec3(1.0, 0.875, 0.0), highlight);
+    }
+  `
+});
+viewer.scene.preRender.addEventListener(() => {
+  if (aircraft?.show) aircraftShader.setUniform('u_pulse', aircraftPulse());
+});
 
 function formatTime(ms) {
   const sign = ms < 0 ? '−' : '';
@@ -73,14 +92,6 @@ function updateTimeline() {
   alignment.textContent = `视频 ${formatTime(currentVideoMs())} ↔ OSD ${formatTime(osdMs)}`;
   unlinkButton.disabled = !linked;
 }
-
-function updateAircraftRotation() {
-  if (!aircraft?.billboard || aircraftHeadingDeg === null) return;
-  // Billboard positive rotation is counterclockwise; OSD heading is clockwise from north.
-  aircraft.billboard.rotation = viewer.camera.heading - Cesium.Math.toRadians(aircraftHeadingDeg);
-}
-
-viewer.camera.changed.addEventListener(updateAircraftRotation);
 
 function centerCamera(frame) {
   const height = cameraPlaced
@@ -140,12 +151,9 @@ function cueAt(ms) {
 
 function clearProjection() {
   if (footprint) viewer.scene.primitives.remove(footprint);
-  if (aircraft) viewer.entities.remove(aircraft);
   if (frameBorder) viewer.entities.remove(frameBorder);
   frustumLines.forEach(line => viewer.entities.remove(line));
   footprint = undefined;
-  aircraft = undefined;
-  aircraftHeadingDeg = null;
   frameBorder = undefined;
   frustumLines = [];
   activeCueIndex = -1;
@@ -237,6 +245,7 @@ function render() {
   if (index === activeCueIndex && index >= 0 && !needsVideoTexture) return;
   clearProjection();
   if (index < 0) {
+    if (aircraft) aircraft.show = false;
     status.textContent = `OSD ${formatTime(lookupTime)} · 当前时间没有有效投影帧`;
     telemetry.textContent = '等待下一条视锥数据';
     return;
@@ -244,12 +253,18 @@ function render() {
   activeCueIndex = index;
   const frame = activeCues[index].frame;
   const corners = frame.viewMode === 'PLANAR' ? frame.corners : frame.spatialCorners;
-  if (!Array.isArray(corners) || corners.length !== 4) return;
+  if (!Array.isArray(corners) || corners.length !== 4) {
+    if (aircraft) aircraft.show = false;
+    return;
+  }
   const points = corners.map(point => Cesium.Cartesian3.fromDegrees(
     Number(point.longitude), Number(point.latitude),
     frame.viewMode === 'PLANAR' ? 0.35 : Number(point.height)
   ));
-  if (!points.every(point => Number.isFinite(point.x) && Number.isFinite(point.y) && Number.isFinite(point.z))) return;
+  if (!points.every(point => Number.isFinite(point.x) && Number.isFinite(point.y) && Number.isFinite(point.z))) {
+    if (aircraft) aircraft.show = false;
+    return;
+  }
   const origin = Cesium.Cartesian3.fromDegrees(
     Number(frame.longitude), Number(frame.latitude), Number(frame.height)
   );
@@ -269,7 +284,7 @@ function render() {
       positions: [origin, point],
       width: 2,
       material: new Cesium.PolylineDashMaterialProperty({
-        color: Cesium.Color.fromCssColorString('#85b8ef').withAlpha(0.9),
+        color: Cesium.Color.fromCssColorString('#66d6a3').withAlpha(0.9),
         dashLength: 12
       })
     }
@@ -278,20 +293,28 @@ function render() {
   if (frame.viewMode === 'PLANAR' && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
     footprint = createProjection(points);
   }
-  aircraft = viewer.entities.add({
-    position: origin,
-    billboard: {
-      image: aircraftImage,
-      width: 54,
-      height: 54,
-      verticalOrigin: Cesium.VerticalOrigin.CENTER,
-      disableDepthTestDistance: Number.POSITIVE_INFINITY
-    }
-  });
   const heading = Number(frame.attitudeHead);
-  aircraftHeadingDeg = Number.isFinite(heading) ? heading : null;
+  // The glTF nose is +X, which Cesium maps to local north before applying HPR.
+  const orientation = Cesium.Transforms.headingPitchRollQuaternion(origin,
+    new Cesium.HeadingPitchRoll(Cesium.Math.toRadians(Number.isFinite(heading) ? heading : 0), 0, 0));
+  if (aircraft) {
+    aircraft.position = origin;
+    aircraft.orientation = orientation;
+    aircraft.show = true;
+  } else {
+    aircraft = viewer.entities.add({
+      position: origin,
+      orientation,
+      model: {
+        uri: aircraftModel,
+        minimumPixelSize: 56,
+        maximumScale: 200,
+        shadows: Cesium.ShadowMode.DISABLED,
+        customShader: aircraftShader
+      }
+    });
+  }
   if (followDrone.checked) centerCamera(frame);
-  updateAircraftRotation();
   status.textContent = `OSD ${formatTime(lookupTime)} · `
     + (frame.viewMode === 'PLANAR' ? '地面投影' : '空间视锥');
   telemetry.textContent = `OSD 时间 ${new Date(frame.reportTimeMs).toLocaleString()} · cue ${index + 1}/${activeCues.length}`;
@@ -305,7 +328,6 @@ followDrone.addEventListener('change', () => {
   followLabel.textContent = followDrone.checked ? '自动居中' : '手动浏览';
   if (!followDrone.checked || activeCueIndex < 0) return;
   centerCamera(activeCues[activeCueIndex].frame);
-  updateAircraftRotation();
 });
 video.addEventListener('loadedmetadata', () => {
   if (linked && offsetMs < 0) {

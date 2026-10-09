@@ -1,0 +1,64 @@
+{
+    "tid": "c380de2a-adf0-4535-b26f-7de38d7f1968",
+    "bid": "ec5b8db5-5b7c-4a81-be35-0bb2ce87a0c1",
+    "timestamp": 1787888986817,
+    "data": {
+        "network_state": {
+            "type": 2,
+            "quality": 0,
+            "rate": 3
+        },
+        "drone_charge_state": {
+            "state": 0,
+            "capacity_percent": 60
+        },
+        "drone_in_dock": 1,
+        "rainfall": 0,
+        "wind_speed": 4.5,
+        "environment_temperature": 30.4,
+        "temperature": 78,
+        "humidity": 72,
+        "heading": 87.64413452148438,
+        "home_position_is_valid": 1,
+        "latitude": 30.18566665519063,
+        "longitude": 120.19797607653796,
+        "height": 40.6895980834961,
+        "alternate_land_point": {
+            "latitude": 0,
+            "longitude": 0,
+            "height": 0,
+            "safe_land_height": 30,
+            "is_configured": 0
+        },
+        "first_power_on": 1631945855969,
+        "position_state": {
+            "is_calibration": 1,
+            "is_fixed": 2,
+            "quality": 5,
+            "gps_number": 8,
+            "rtk_number": 38
+        },
+        "storage": {
+            "total": 53082240,
+            "used": 21720
+        },
+        "mode_code": 0,
+        "cover_state": 0,
+        "silent_mode": 0,
+        "supplement_light_state": 0,
+        "emergency_stop_state": 0,
+        "air_conditioner": {
+            "air_conditioner_state": 1,
+            "switch_time": 0
+        },
+        "battery_store_mode": 1,
+        "alarm_state": 0,
+        "putter_state": 0,
+        "sub_device": {
+            "device_sn": "1581F8HGX255D00A0DJQ",
+            "device_online_status": 0,
+            "device_paired": 1
+        }
+    },
+    "gateway": "8UUXN4E00A05F5"
+}
