@@ -13,6 +13,9 @@
 
     <modules>
         <module>device-platform-thing-model</module>
+        <module>device-platform-tofu-ms-simulator</module>
+        <module>device-platform-tofu-ms-command-client</module>
+        <module>device-platform-tofu-ms-gateway-web</module>
         <module>device-platform-video-projection-replay</module>
     </modules>
 
