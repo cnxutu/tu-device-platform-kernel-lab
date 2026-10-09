@@ -27,6 +27,8 @@ java -cp device-platform-thing-model/target/classes com.tu.deviceplatform.thingm
 
 TOFU-MS 的职责、适配器与编解码、TCP 数据流、配置同步以及新设备接入最小闭环，详见本仓库的 [TOFU-MS 新设备接入网关案例](D:/workspace/github/tu-device-platform-kernel-lab/docs/tofu-ms-gateway-integration-case.md)。文章包含代码依赖图、运行流程图、启动与控制时序图、具体报文字节转换及可复现的测试步骤。
 
+第二阶段的真实产品录入、平台与侦测业务集成设计，见 [TOFU-MS 实验链路与完整平台集成对照](docs/tofu-ms-platform-integration-comparison.md)。包含两种链路的 Mermaid 图、产品身份关联流程、控制反馈时序、模块职责与待补齐差异；正式链路尚待实施和验收。
+
 当前独立网关链路的汇总与验收说明维护在 Workbench 的 [TOFU-MS 独立网关控制链路](../tu-engineering-workbench/products/company/device-detection-platform/flows/tofu-ms-gateway-chain.md)。可执行的构建、启动、验证与停止脚本保留在本仓库 `scripts/`。
 
 后续新增能力时，优先新增独立 Maven 子模块；例如视频流平台、设备状态投影或消息可靠性，都应通过明确的模块依赖接入，而不是堆叠进物模型内核。

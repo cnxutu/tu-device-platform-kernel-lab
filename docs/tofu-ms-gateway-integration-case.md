@@ -4,6 +4,8 @@
 
 **本案例的验收链路是：实验平台发起物模型服务调用，经 Redis 交给独立启动的 `c-iot-gateway`，由网关内部的 TOFU-MS 适配器通过 TCP 连接设备，随后将发送结果、设备属性、在线状态和协议 ACK 回传。**
 
+真实平台如何接替模拟职责、产品与设备如何关联，以及侦测业务还需补齐哪些适配，见 [实验链路与完整平台集成对照](tofu-ms-platform-integration-comparison.md)。该文区分已核实源码与尚未验收的第二阶段目标设计。
+
 阅读时先区分两个关系：`s-iot-modules-uav-detection` 提供“统一说什么”，`ad-iot-codec-adapter-uav-detection` 实现“如何转换成设备能理解的协议”；两者都是网关使用的代码依赖。真正运行并与设备通信的服务是 `c-iot-gateway`。实验仓库 `tu-device-platform-kernel-lab` 在这里模拟平台侧和设备侧，构成最小测试闭环。
 
 ## 1. 四个工程分别负责什么
