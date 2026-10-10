@@ -51,7 +51,7 @@ public final class TofuMsCommandClientMain {
                 control.move("zoom_control", lensAction(words[1], "in", "out"), Integer.valueOf(words[2]), Long.parseLong(words[3])); break;
             case "focus":
                 require(words, 3);
-                control.move("optical_focus_control", lensAction(words[1], "far", "near"), null, Long.parseLong(words[2])); break;
+                control.move("focus_control", lensAction(words[1], "far", "near"), null, Long.parseLong(words[2])); break;
             case "stop":
                 if (words.length < 1 || words.length > 2) { throw new IllegalArgumentException("stop [ptz|zoom|focus|all]"); }
                 control.stop(words.length == 1 || "all".equals(words[1]) ? null : identifier(words[1])); break;
@@ -62,7 +62,7 @@ public final class TofuMsCommandClientMain {
         switch (actuator) {
             case "ptz": return "ptz_control";
             case "zoom": return "zoom_control";
-            case "focus": return "optical_focus_control";
+            case "focus": return "focus_control";
             default: throw new IllegalArgumentException("Expected ptz, zoom, focus or all");
         }
     }

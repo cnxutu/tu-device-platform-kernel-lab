@@ -32,7 +32,7 @@ public final class GatewayWebLab implements AutoCloseable {
         }
         Set<String> services = new HashSet<>();
         catalog.path("services").forEach(service -> services.add(service.path("identifier").asText()));
-        if (!services.equals(new HashSet<>(Arrays.asList("ptz_control", "zoom_control", "optical_focus_control")))) {
+        if (!services.equals(new HashSet<>(Arrays.asList("ptz_control", "zoom_control", "focus_control")))) {
             throw new IllegalArgumentException("TSL services do not match supported optical controls");
         }
         journal.add("LAB", "Gateway lab started; choose embedded or standalone P3 mode; video is independent");

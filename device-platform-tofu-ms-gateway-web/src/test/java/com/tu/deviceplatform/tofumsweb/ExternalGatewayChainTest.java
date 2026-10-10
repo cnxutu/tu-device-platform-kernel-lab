@@ -39,11 +39,11 @@ class ExternalGatewayChainTest {
                 assertEquals(1, simulator.getClientCount());
 
                 assertEquals(400, invoke(web, "ptz_control", 2, 101, 300).code);
-                assertEquals(400, invoke(web, "optical_focus_control", 1, 30, 300).code);
+                assertEquals(400, invoke(web, "focus_control", 1, 30, 300).code);
                 assertNull(simulator.awaitReceipt(200));
                 motion(web, simulator, "ptz_control", 2, 30, "FF010002130016", "FF010000000001");
                 motion(web, simulator, "zoom_control", 1, 100, "8101040727FF", "8101040700FF");
-                motion(web, simulator, "optical_focus_control", 1, null, "8101040802FF", "8101040800FF");
+                motion(web, simulator, "focus_control", 1, null, "8101040802FF", "8101040800FF");
                 JsonNode evidence = await(web, s -> has(s, "ACK") && has(s, "TX_FRAME") && has(s, "RX_FRAME"), 8000);
                 mapper.writerWithDefaultPrettyPrinter().writeValue(Paths.get("target/external-gateway-evidence.json").toFile(), evidence);
                 assertEquals("optical_protocol_feedback", evidence.path("lastAck").path("params").path("identifier").asText());

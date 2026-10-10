@@ -41,7 +41,7 @@ class GatewayWebIntegrationTest {
             assertEquals(200, invoke(web, "zoom_control", 0, null, null).code);
             assertEquals("8101040700FF", serial(simulator.awaitReceipt(1000)));
             assertNull(simulator.awaitReceipt(1300)); // Manual STOP cancelled the timer.
-            assertEquals(200, invoke(web, "optical_focus_control", 1, null, 300).code);
+            assertEquals(200, invoke(web, "focus_control", 1, null, 300).code);
             assertEquals("8101040802FF", serial(simulator.awaitReceipt(1000)));
             assertEquals("8101040800FF", serial(simulator.awaitReceipt(2000)));
             JsonNode snapshot = await(web, value -> has(value, "ACK"), 2000);
@@ -80,7 +80,7 @@ class GatewayWebIntegrationTest {
             simulator.setHeartbeatReplies(false); connect(web, simulator);
             assertEquals(400, invoke(web, "ptz_control", 2, 30, 0).code);
             assertEquals(400, invoke(web, "ptz_control", 2, 101, 300).code);
-            assertEquals(400, invoke(web, "optical_focus_control", 1, 30, 300).code);
+            assertEquals(400, invoke(web, "focus_control", 1, 30, 300).code);
             assertEquals(400, invoke(web, "unknown_service", 1, 30, 300).code);
             assertEquals(400, http(web, "POST", "/api/invoke", "{\"identifier\":\"ptz_control\",\"params\":{\"channelId\":\"1\",\"Action\":2},\"durationMillis\":300}").code);
             assertEquals(409, invoke(web, "ptz_control", 2, 30, 300).code);

@@ -53,7 +53,7 @@ public final class TimedOpticalControl implements AutoCloseable {
         return submit(() -> {
             if (identifier == null) {
                 RuntimeException failure = null;
-                for (String scope : new String[] {"ptz_control", "zoom_control", "optical_focus_control"}) {
+                for (String scope : new String[] {"ptz_control", "zoom_control", "focus_control"}) {
                     try { stopScope(scope); } catch (RuntimeException e) {
                         if (failure == null) { failure = e; } else { failure.addSuppressed(e); }
                     }
@@ -88,12 +88,12 @@ public final class TimedOpticalControl implements AutoCloseable {
         if (action < 1 || action > maxAction || duration < 100 || duration > 10000) {
             throw new IllegalArgumentException("Movement action and duration 100..10000ms required");
         }
-        if ("optical_focus_control".equals(identifier)) {
+        if ("focus_control".equals(identifier)) {
             if (speed != null) { throw new IllegalArgumentException("Focus has fixed speed"); }
         } else if (speed == null || speed < 1 || speed > 100) { throw new IllegalArgumentException("Speed 1..100 required"); }
     }
     private static void validateIdentifier(String identifier) {
-        if (!"ptz_control".equals(identifier) && !"zoom_control".equals(identifier) && !"optical_focus_control".equals(identifier)) {
+        if (!"ptz_control".equals(identifier) && !"zoom_control".equals(identifier) && !"focus_control".equals(identifier)) {
             throw new IllegalArgumentException("Unsupported actuator");
         }
     }

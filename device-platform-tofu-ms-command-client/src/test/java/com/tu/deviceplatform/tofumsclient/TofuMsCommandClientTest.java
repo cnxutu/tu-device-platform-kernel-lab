@@ -49,7 +49,7 @@ class TofuMsCommandClientTest {
             control.stop("zoom_control").get(2, TimeUnit.SECONDS);
             assertEquals("8101040700FF", serial(sim.awaitReceipt(1000)));
             assertNull(sim.awaitReceipt(750));
-            control.move("optical_focus_control", 1, null, 1000).get(2, TimeUnit.SECONDS);
+            control.move("focus_control", 1, null, 1000).get(2, TimeUnit.SECONDS);
             assertEquals("8101040802FF", serial(sim.awaitReceipt(1000)));
             control.close();
             assertEquals("8101040800FF", serial(sim.awaitReceipt(1000)));
@@ -66,7 +66,7 @@ class TofuMsCommandClientTest {
                  TimedOpticalControl control = new TimedOpticalControl(client, log::add)) {
                 assertThrows(IllegalArgumentException.class, () -> control.move("ptz_control", 2, 30, 0));
                 assertThrows(IllegalArgumentException.class, () -> control.move("ptz_control", 2, 101, 200));
-                assertThrows(IllegalArgumentException.class, () -> control.move("optical_focus_control", 1, 30, 200));
+                assertThrows(IllegalArgumentException.class, () -> control.move("focus_control", 1, 30, 200));
                 assertThrows(IllegalStateException.class, () -> control.move("ptz_control", 2, 30, 200));
                 sim.setHeartbeatReplies(true); await(client::isOnline, 3000);
                 assertNull(sim.awaitReceipt(400));
