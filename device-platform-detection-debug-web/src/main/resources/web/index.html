@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>光电联动调试台</title><link rel="stylesheet" href="/style.css"><script defer src="/app.js"></script></head>
+<body><main>
+<header><div><span class="eyebrow">DETECTION / DEVICE LAB</span><h1>光电联动调试台</h1><p>把点位、转向与 AI 分开验证，再串起真实平台链路。</p></div><span id="connection" class="badge">未连接平台</span></header>
+<section class="login"><div class="row"><label class="wide">平台 Authorization<input id="authorization" type="text" autocomplete="off" spellcheck="false" placeholder="首次连接或更新时填写 Token"></label><label>防区编号<input id="zone" placeholder="按平台实际防区填写"></label><button id="login">连接 / 更新登录态</button></div><p>登录后保留并明文显示本页输入的 Token，方便核对；不写入浏览器存储或文件。当前标签页刷新后复用服务内存中的 Token，输入框不回传旧值；服务重启或平台拒绝认证后需重新连接。</p><p id="environment">部署时固定平台、摄像头与仿真设备；登录后显示当前配置。</p></section>
+<div id="notice" role="status">没有任务自动启动。请先打开平台视频，再选择测试步骤。</div>
+<section class="card scene"><span class="step">测试场景 / 前置条件</span><h2>先检查，再执行</h2>
+<div class="row"><label class="wide">当前场景<select id="scene-select"><option value="basic">基础云台与镜头</option><option value="manual">当前位置手动 AI</option><option value="upstream" selected>仅验证侦测上报（要求全局联动关闭）</option><option value="pointing">坐标上报 → 只指向</option><option value="tracking">坐标 → AI 跟踪（前置待确认）</option></select></label><button id="scene-check">检查前置条件</button></div>
+<p>切换场景不发动作、不改配置。基础控制与手动 AI 可独立测试；点位发送按所选场景检查真实链路。</p>
+<div class="row"><label>已确认俯仰下限 / °<input id="elevation-min" type="number" min="-90" max="90" step="0.1" placeholder="由现场确认"></label><label>已确认俯仰上限 / °<input id="elevation-max" type="number" min="-90" max="90" step="0.1" placeholder="由现场确认"></label></div>
+<label class="confirm"><input id="window-confirmed" type="checkbox">我已确认此俯仰窗口可用于本次测试；该值不代表机械范围标定</label>
+<div class="row"><button id="scene-preview">预览只指向配置</button><button id="scene-apply">应用预览配置</button><button id="scene-finish" class="stop">结束并恢复临时配置</button></div>
+<p id="scene-recovery">尚无临时配置。全局联动开关及白名单仍需管理员通过配置中心管理。</p>
+<div id="scene-checks" role="status">尚未检查。</div><pre id="scene-changes">尚无配置变更预览</pre>
+<p>仅验证上报也可能写入目标及告警；全局联动开启后可能选择同防区其他光电设备，TOFU 白名单不能隔离旧协议设备。前置检查不保证网关已应用配置、摄像头已到位或 AI 就绪。</p></section>
+<div class="grid">
+<section class="card"><span class="step">01 / 基础动作</span><h2>云台与镜头</h2><p>调用平台业务接口；每次运动由后台定时停止，页面关闭不取消停止。</p>
+<div class="row"><label>速度 / %<input id="speed" type="number" min="1" max="100" value="15"></label><label>持续 / 秒<input id="duration" type="number" min="0.1" max="10" step="0.1" value="1"></label></div>
+<div class="ptz"><button data-move="3" class="up">上 ↑</button><button data-move="1" class="left">← 左</button><button id="motion-stop" class="stop center">停止</button><button data-move="2" class="right">右 →</button><button data-move="4" class="down">下 ↓</button></div>
+<div class="row"><button data-lens="zoom_control:1">放大 ＋</button><button data-lens="zoom_control:2">缩小 −</button><button data-lens="focus_control:1">聚焦 ＋</button><button data-lens="focus_control:2">聚焦 −</button></div><p id="motion-state" class="hint">等待连接</p></section>
+<section class="card"><span class="step">02 / 当前位置 AI</span><h2>手动对准，再开启跟踪</h2><p>先把无人机放入画面。此步骤不下发定位、不创建侦测任务、不自动录像。</p>
+<div class="row"><label>首次锁定等待 / 秒<input id="capture" type="number" min="5" max="120" value="30"></label><label>任务最长 / 秒<input id="session" type="number" min="5" max="600" value="120"></label></div>
+<div class="row"><button id="ai-start" class="primary">开启 AI 跟踪</button><button id="ai-stop" class="stop">关闭 AI / 停止任务</button></div>
+<div class="inset"><strong id="ai-feedback" class="feedback unknown" role="status">未启动</strong><p id="ai-feedback-time">尚无设备反馈</p><strong id="ai-state">尚未发起</strong><p>展示本任务最后一次上报的状态和时间，不代表实时就绪或持续锁定；查询失败显示未知。启动受理不代表到位或锁定，超时后仍请显式关闭以释放任务。</p><code id="ai-task">—</code></div></section>
+<section class="card source"><span class="step">03 / NT-XR1 侦测上报</span><h2>用飞手提供的位置驱动完整链路</h2><p>WGS84 经纬度 + 海拔（米）。起飞点验证首次指向；飞行中更新坐标才是连续引导。相对高度留空时不伪造，也不代替海拔。</p>
+<div class="row"><label>方位样例<select id="sample"><option value="">手动填写</option><option value="north">北 · 0° · 约 50 米</option><option value="east">东 · 90° · 约 50 米</option><option value="south">南 · 180° · 约 50 米</option><option value="west">西 · 270° · 约 50 米</option><option value="sequence">北→东→南→西 · 四点序列</option></select></label></div>
+<p class="hint">固定模拟样例基于安装点 120.0146410、30.2835800，海拔 63.3 米；目标海拔 65.3 米（向上约 2.3°）。选择仅填表，不发送；安装点变更后需自行修改坐标。</p>
+<div class="row"><label>仿真无人机标识<input id="target" value="SIM-UAV-001" maxlength="64"></label><label>经度 longitude<input id="longitude" type="number" min="-180" max="180" step="any" placeholder="东经为正"></label><label>纬度 latitude<input id="latitude" type="number" min="-90" max="90" step="any" placeholder="北纬为正"></label><label>海拔 altitude / m<input id="altitude" type="number" step="any" placeholder="必填，绝对海拔"></label><label>相对高度 / m（选填）<input id="relative" type="number" step="any"></label></div>
+<div class="row"><button id="preview">预览报文</button><button id="point-once">发送一次当前点</button><button id="point-update">更新连续上报点位</button></div>
+<details><summary>多点序列（可选，最多 30 点）</summary><p>每行：经度,纬度,海拔[,相对高度]。留空时连续发送上方单点；多点按顺序发送，到末点后保持末点直至停止或达到时限。</p><textarea id="sequence" rows="4" placeholder="经度,纬度,海拔"></textarea></details>
+<div class="row"><label>点间隔 / 秒<input id="interval" type="number" min="1" max="60" value="2"></label><label>最长发送 / 秒<input id="source-duration" type="number" min="1" max="600" value="60"></label><button id="points-start" class="primary">开始连续上报</button><button id="points-stop" class="stop">停止本工具上报</button></div>
+<div class="inset"><strong id="source-state">尚未发送</strong><p>上报路径：NT-XR1 MQTT → 设备网关 → IoT 平台 → 侦测业务 → 下行控制。需仿真设备已录入并绑定同防区，联动开关及白名单由管理员管理；只指向配置可在上方预览后显式应用。停止上报不等于业务任务立即结束。</p></div>
+<details><summary>最近预览 / 发送报文</summary><pre id="payload">尚无报文</pre></details></section>
+</div>
+<section class="card"><div class="row between"><div><span class="step">TRACE / 会话记录</span><h2>按实际请求核对</h2></div><span class="hint">最近 100 条 · 不保存 Authorization</span></div><div id="journal" class="journal"><p>等待操作</p></div></section>
+<footer>这是共享摄像头调试台。先停止当前 AI / 连续上报，再切换测试步骤；其他来源的业务占用仍由真实平台判断。</footer>
+</main></body></html>
