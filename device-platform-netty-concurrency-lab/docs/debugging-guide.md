@@ -4,6 +4,8 @@
 
 ## 开始前
 
+若尚不熟悉 Channel、EventLoop、worker、Future 或 latch，先读[组件、概念与用法](concepts-and-usage.md)。它按“技术大类 → 分类主题 → 验证点”映射六项 JUnit 测试，列出了 API 用法和不同完成信号的含义。本页专注断点与时序；源码注释则贴近每一步说明它在哪个线程执行、为什么需要这一步。
+
 1. IDEA 导入实验仓库根 POM，JDK 8 或更高；先按[运行说明](../README.md)执行模块验证。
 2. 打开一个 Demo 的 main，先 Run 看完整日志，再 Debug。
 3. 在断点右键面板选择 Suspend：**Thread**。观察 worker 暂停而 I/O 继续时尤其重要；All 会把心跳也停住，无法据此判断 worker 是否阻塞 I/O。
