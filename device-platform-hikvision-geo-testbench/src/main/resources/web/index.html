@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>海康 GEO 测试台</title>
+    <link rel="stylesheet" href="/style.css">
+    <script defer src="/app.js"></script>
+</head>
+<body>
+<main>
+    <header class="topbar">
+        <div>
+            <div class="eyebrow">DEVICE CONTROL / GEO</div>
+            <h1>海康 GEO 测试台</h1>
+        </div>
+        <div id="connection" class="connection"><span class="lamp"></span><span>未配置 P2</span></div>
+    </header>
+
+    <section class="destination band">
+        <label class="url-field">P2 服务地址
+            <input id="p2-base" type="url" placeholder="http://192.168.1.123:48084" autocomplete="off" spellcheck="false">
+        </label>
+        <button id="configure-p2" class="icon-text" title="保存到当前进程内存；下发前也会自动同步此地址">应用地址</button>
+        <span id="auth-state" class="quiet"></span>
+        <code id="p2-route">/rpc-api/iot/devices/service/invoke</code>
+    </section>
+
+    <section class="request-section band">
+        <div class="section-heading">
+            <div><div class="eyebrow">01 / REQUEST</div><h2>导入 P1-1 下发请求</h2></div>
+            <span id="request-count" class="quiet">未载入</span>
+        </div>
+        <div class="import-grid">
+            <textarea id="request-input" rows="5" spellcheck="false" placeholder='粘贴 requestDTO JSON 或包含 requestDTO: 的 IOT_DOWN 日志行，例如：{"deviceId":1,"identifier":"target_acquire","params":{"position":{"geo":{"altitude":10,"latitude":30,"longitude":120},"pt":{"azimuth":90,"elevation":-5,"objectDistance":500}},"targetId":"SIM-TARGET-001"},"syncMode":"BLOCK"}'></textarea>
+            <div class="import-actions">
+                <button id="import-request" class="primary">导入请求</button>
+                <label>请求记录
+                    <select id="request-select" disabled><option value="">尚未载入</option></select>
+                </label>
+                <div id="request-meta" class="request-meta">设备、目标和初始经纬度将在导入后显示。</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="control-section band">
+        <div class="section-heading">
+            <div><div class="eyebrow">02 / TARGET</div><h2>目标与中心点</h2></div>
+            <div class="segmented" role="group" aria-label="控制功能">
+                <button class="selected" data-operation="target_acquire">快速到位</button>
+                <button data-operation="target_follow">目标跟踪</button>
+            </div>
+        </div>
+        <div class="coordinates">
+            <label>经度 / °<input id="longitude" type="number" min="-180" max="180" step="any" value="120.019538700"></label>
+            <label>纬度 / °<input id="latitude" type="number" min="-90" max="90" step="any" value="30.281186400"></label>
+            <label>海拔 / m<input id="altitude" type="number" step="any" value="-22"></label>
+            <label>半径 / m<input id="radius" type="number" min="1" max="1000" step="1" value="1000"></label>
+            <label>最长运行 / s<input id="duration" type="number" min="1" max="600" step="1" value="60"></label>
+        </div>
+        <div class="mode-row">
+            <div class="segmented mode-switch" role="group" aria-label="点位模式">
+                <button class="selected" data-mode="single">单点</button>
+                <button data-mode="cardinal">四方位</button>
+                <button data-mode="random">圆内随机</button>
+            </div>
+            <div id="single-direction" class="direction-actions segmented" role="group" aria-label="正方向随机选点">
+                <span class="quiet">轴线随机点</span>
+                <button type="button" data-random-direction="N" title="在中心点正北轴线上，按当前半径随机选点">北</button>
+                <button type="button" data-random-direction="E" title="在中心点正东轴线上，按当前半径随机选点">东</button>
+                <button type="button" data-random-direction="S" title="在中心点正南轴线上，按当前半径随机选点">南</button>
+                <button type="button" data-random-direction="W" title="在中心点正西轴线上，按当前半径随机选点">西</button>
+            </div>
+            <div class="actions">
+                <button id="preview" title="生成 P2 JSON 和设备 XML/curl">预览指令</button>
+                <button id="send-once" class="primary">指定点下发</button>
+                <button id="send-random-once">随机点下发</button>
+                <button id="start-loop" class="primary hidden">开始序列</button>
+                <button id="stop-loop" class="stop" disabled>停止</button>
+            </div>
+        </div>
+        <p class="timing-note">循环下发间隔至少 1 秒，P2 响应较慢时按响应完成后串行等待；连续模式最长 10 分钟，页面心跳中断后自动停止后续下发。停止只结束后续 P2 请求，不会下发设备解跟踪或制动指令。</p>
+    </section>
+
+    <section class="visual-section">
+        <div class="visual-heading">
+            <div><div class="eyebrow">03 / GEO RANGE</div><h2>点位范围</h2></div>
+            <div class="legend"><span><i class="dot center-dot"></i>中心点</span><span><i class="dot route-dot"></i>已下发点</span><span><i class="dot cardinal-dot"></i>方位点</span></div>
+        </div>
+        <canvas id="geo-canvas" aria-label="中心点周围八方位点位图，可点击选择方位" title="八方位点可用于选中目标"></canvas>
+        <div class="visual-footer"><span id="range-caption">半径 1000 m</span><span id="latest-point">尚无下发点</span></div>
+    </section>
+
+    <section class="result-section band">
+        <div class="section-heading">
+            <div><div class="eyebrow">04 / RESULT</div><h2>下发结果</h2></div>
+            <div class="result-summary"><strong id="loop-status">等待操作</strong><span id="loop-count">0 次下发</span></div>
+        </div>
+        <div class="result-grid">
+            <div>
+                <div class="tabs" role="tablist">
+                    <button class="selected" data-preview="p2">P2 请求 JSON</button>
+                    <button data-preview="xml">设备 XML</button>
+                    <button data-preview="curl">curl 命令</button>
+                </div>
+                <pre id="preview-output">导入请求并选择点位后生成</pre>
+            </div>
+            <div class="response-panel">
+                <div class="eyebrow">LATEST P2 RESPONSE</div>
+                <div id="response-status" class="response-status">尚未下发</div>
+                <pre id="response-output">P2 响应将在此显示。接口成功仅表示 P2 返回成功，不代表设备已物理转向。</pre>
+            </div>
+        </div>
+    </section>
+    <footer>本地测试台只向 P2 发送请求；设备直连 curl 仅用于复制执行。</footer>
+</main>
+</body>
+</html>

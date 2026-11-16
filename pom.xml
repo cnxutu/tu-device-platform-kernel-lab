@@ -17,6 +17,7 @@
         <module>device-platform-tofu-ms-command-client</module>
         <module>device-platform-tofu-ms-gateway-web</module>
         <module>device-platform-detection-debug-web</module>
+        <module>device-platform-hikvision-geo-testbench</module>
         <module>device-platform-video-projection-replay</module>
         <module>device-platform-netty-concurrency-lab</module>
     </modules>
