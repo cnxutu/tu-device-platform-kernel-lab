@@ -34,6 +34,14 @@ java -Dfile.encoding=UTF-8 -cp "device-platform-netty-concurrency-lab/target/cla
 
 Linux/macOS 将 classpath 中的 `;` 改成 `:`。替换末尾类名即可运行其他五个实验。`target/lib` 由 `verify` 包含的 package 阶段准备，不要求先 install 本模块。
 
+### IDEA 提示无法解析 JUnit 启动器
+
+若点击测试方法后提示 `Failed to resolve org.junit.platform:junit-platform-launcher:1.10.2`，说明测试启动依赖解析失败，尚未执行实验断言。Maven Surefire 与 IDEA 直接运行测试的启动路径不同，因此 Maven 测试通过时，IDEA 仍可能在补充下载 launcher 时受仓库或代理影响。
+
+本模块已显式声明 test 范围的 `junit-platform-launcher:1.10.2`，与 Jupiter 5.10.2 配套。修改 POM 后在 IDEA Maven 窗口执行 **Reload All Maven Projects**，再运行测试；该依赖不进入 Demo 的运行库。
+
+如果 Maven 重载也无法取得依赖，检查 IDEA Maven 使用的 settings.xml／本地仓库，以及 IDEA HTTP Proxy 设置。2026-11-16 的一次本机故障日志为 `Connect to 127.0.0.1:7892 failed: Connection refused`，表示当时配置的代理未能连接；应根据当前网络情况修正或停用该代理，不能将它当成 Netty 或测试断言失败。
+
 ## 六个入口
 
 | 建议顺序 | main 类（均在 `com.tu.deviceplatform.nettylab.scenario`） | 实际演示 |

@@ -22,6 +22,14 @@
             <version>${junit.jupiter.version}</version>
             <scope>test</scope>
         </dependency>
+        <!-- Jupiter 5.10.2 对应 Platform 1.10.2。显式提供启动器，供 IDEA 直接运行 JUnit 测试；
+             避免项目类路径缺少 launcher 时，由 IDE 临时走另一套仓库／代理配置下载。 -->
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-launcher</artifactId>
+            <version>1.10.2</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
