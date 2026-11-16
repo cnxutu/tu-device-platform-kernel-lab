@@ -17,6 +17,14 @@ JUnit 类 `ConcurrencyScenariosTest` 是总入口，`@DisplayName` 将“大类�
 
 其中锁、原子引用、Future、latch 都是 Java 并发工具，并非 Netty 专属。后两项同时涉及 Channel 生命周期和跨线程状态，所以单独标出两个大类。
 
+### 入门资料
+
+- [Netty 4 用户指南（中文，w3cschool）](https://www.w3cschool.cn/netty_4_user_guide/)：适合先看服务端／客户端示例，再对照 `LocalTcpLab` 的启动配置。属于社区中文资料，代码细节以当前使用的 4.1 版本为准。
+- [Netty 官方 4.x 用户指南（英文）](https://netty.io/wiki/user-guide-for-4.x.html)：理解 bootstrap、handler、异步 I/O 和资源释放的基础用法。
+- [ServerBootstrap 官方 4.1 API（英文）](https://netty.io/4.1/api/io/netty/bootstrap/ServerBootstrap.html)：需要确认 `group`、`handler`、`childHandler`、`option`、`childOption` 差异时查阅。在线 API 对应 4.1 分支较新版本，本实验依赖固定为 4.1.116.Final。
+
+建议先看中文指南中的服务端与客户端例子，然后阅读 `LocalTcpLab` 中组件首次出现处的注释，最后运行 `SharedEventLoopDemo`。源码注释已按“Netty 组件身份 → 基础功能 → 本实验用途”解释，不必先读完框架源码。
+
 ## 2. Netty：先分清连接、线程和处理链
 
 | 组件 | 在本模块中的位置 | 作用和使用方法 | 调试时观察 |

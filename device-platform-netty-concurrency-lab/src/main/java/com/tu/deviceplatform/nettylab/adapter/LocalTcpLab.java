@@ -37,6 +37,11 @@ import java.util.function.Consumer;
  * {@link #installTextCodec} 如何把 TCP 字节流变成一行文本。设备收到什么就回什么，
  * 因而实验可以把精力放在线程和状态上，不需要理解真实设备协议。
  *
+ * <p>常见服务端用法：ServerBootstrap → group(接入组, I/O组) → channel(监听实现)
+ * → childHandler(接入连接的处理链) → bind(监听地址)。
+ * 常见客户端用法：Bootstrap → group(I/O组) → channel(Socket实现)
+ * → handler(本连接的处理链) → connect(目标地址)。这两条配置链可直接对照下面的构造器与 connect。
+ *
  * <p>线程分工：sim-accept 接入连接，sim-device-io 处理设备侧读写；adapter-io
  * 是所有客户端 Channel 共用的单线程 EventLoop；adapter-worker 是手动卸载回调的
  * 单线程执行器，不监听 Socket，也不会自动接管 receiver。每次 new 都有独立资源。
@@ -46,16 +51,24 @@ import java.util.function.Consumer;
  * I/O 或 worker 回调中；需要从回调发起客户端关闭时用 {@link #shutdownClientAsync()}。
  */
 public final class LocalTcpLab implements AutoCloseable {
-    // ServerBootstrap 的 boss：只负责接受新连接，再交给 deviceIo。
+    // Netty NioEventLoopGroup：管理一组基于 Java NIO 的事件循环，负责处理连接事件、读写和已提交任务。
+    // new NioEventLoopGroup(1, ...) 的 1 是“这个组有几个 EventLoop”，不是组数或设备数。
+    // 不传线程数或传 0 会采用 Netty 默认值，不表示只有一条线程；学习实验显式用 1，便于观察顺序。
+    // 本类分别创建接入组、设备 I/O 组、客户端 I/O 组三个实例，是为了在一个进程里同时演示服务端和客户端。
+    // DefaultThreadFactory 是 Netty 线程工厂；这里指定名称前缀，便于从日志辨认线程属于哪一组。
+    // acceptor 在服务端承担通常称为 boss 的角色：接受新连接，把接入后的 Channel 注册到 deviceIo。
     private final NioEventLoopGroup acceptor =
             new NioEventLoopGroup(1, new DefaultThreadFactory("sim-accept"));
-    // ServerBootstrap 的 worker：本机假设备的 Channel 注册在这里，和适配器客户端隔离。
+    // 服务端通常称为 worker 的 I/O 组：处理已接入 SocketChannel 的读写，和适配器客户端隔离。
+    // 注意这里的“服务端 worker 组”仍是 I/O 线程，不是下面专门卸载慢回调的 adapter-worker。
     private final NioEventLoopGroup deviceIo =
             new NioEventLoopGroup(1, new DefaultThreadFactory("sim-device-io"));
     // 参数 1 表示整个客户端组只有一个 EventLoop，三个连接也不会创建三条 I/O 线程。
     private final NioEventLoopGroup clientIo =
             new NioEventLoopGroup(1, new DefaultThreadFactory("adapter-io"));
-    // 名字虽有 Group，这里也只有一条 worker；卸载可释放 I/O，但不会让回调彼此并行。
+    // Netty DefaultEventExecutorGroup：普通任务执行器组，不负责 NIO Socket 读写。
+    // 本类用它承接显式 execute 提交的慢回调；参数 1 表示只有一个执行器，回调仍串行排队。
+    // 它不是创建 TCP 客户端／服务端的必选组件；只有需要卸载任务时才使用。
     private final DefaultEventExecutorGroup callbacks =
             new DefaultEventExecutorGroup(1, new DefaultThreadFactory("adapter-worker"));
     // 初始化回调会从不同端的 I/O 线程登记 Channel；清理线程还要遍历，故使用并发安全列表。
@@ -69,15 +82,24 @@ public final class LocalTcpLab implements AutoCloseable {
     /** 启动回显服务并等待 bind 成功；端口 0 由操作系统分配，避免实验占用固定设备端口。 */
     public LocalTcpLab() throws Exception {
         try {
-            // ServerBootstrap 配两组线程：acceptor 接入，deviceIo 承载已接入的连接。
+            // Netty ServerBootstrap：TCP 服务端的启动配置组件，组织线程组、Channel 类型和处理器，
+            // 最后用 bind 开始监听；它自身不是监听 Socket，也不是一条工作线程。
+            // group(parentGroup, childGroup) 指定两种角色：parent 接受连接，child 处理已接入连接的 I/O。
+            // 两组是常见的职责分离方式，并非框架强制；group(group) 也可让两个角色共用一组。
             ChannelFuture binding = new ServerBootstrap().group(acceptor, deviceIo)
+                    // Netty NioServerSocketChannel：基于 Java NIO 的 TCP 监听 Channel 类型。
+                    // channel(...) 指定由 Netty 创建的实现类；客户端则使用 NioSocketChannel。
                     .channel(NioServerSocketChannel.class)
+                    // Netty childHandler：给“每条接入后的连接”配置处理链；handler 则用于监听 Channel。
+                    // ChannelInitializer 是连接初始化组件；在 initChannel 中组装该连接自己的 Pipeline。
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel channel) {
                             // 每个新连接安装自己的一条 Pipeline 和 handler，不共享设备身份。
                             channels.add(channel);
                             installTextCodec(channel.pipeline());
+                            // Netty SimpleChannelInboundHandler<String>：接收入站消息的处理器基类。
+                            // 前面的解码器已将消息转为 String；这里只需实现收到一行后的处理逻辑。
                             channel.pipeline().addLast(new SimpleChannelInboundHandler<String>() {
                                 @Override
                                 protected void channelRead0(ChannelHandlerContext context, String text) {
@@ -92,7 +114,10 @@ public final class LocalTcpLab implements AutoCloseable {
                                 }
                             });
                         }
+                    // Netty bind：异步绑定监听地址；这里用 loopback 和动态端口，仅供本机实验。
                     }).bind("127.0.0.1", 0);
+            // Netty ChannelFuture：一次 Channel 异步操作的结果，可检查成功／失败或注册完成监听器。
+            // 它不是新线程；这里由外部驱动线程等待，I/O 回调内通常用 addListener 接续处理。
             // bind 返回不等于已监听成功；显式等待其 Future 后再取实际地址。
             LabSupport.await(binding);
             listener = binding.channel();
@@ -110,9 +135,14 @@ public final class LocalTcpLab implements AutoCloseable {
      * @return 本次连接的 Channel；其 eventLoop 是观察线程归属的入口
      */
     public Channel connect(String device, Consumer<String> receiver) throws Exception {
-        // Bootstrap 是客户端建连配置，Channel 才是建成后的连接；不需要为每个 Channel 建线程组。
+        // Netty Bootstrap：TCP 客户端的启动配置组件；与服务端 bind 相对，通过 connect 主动建立连接。
+        // 客户端没有接受连接的 boss 角色，通常配置一个 I/O 组即可，多条连接可以共享它。
+        // NioSocketChannel 是已连接 TCP Socket 的 NIO 实现类型，Channel 才是每次建成后的连接对象。
         ChannelFuture connecting = new Bootstrap().group(clientIo).channel(NioSocketChannel.class)
+                // Netty ChannelOption：配置 Channel 的选项；这里限制建立 TCP 连接的等待时间为 3000ms，
+                // 它不是业务请求超时、读超时或心跳间隔。服务端 option 配监听 Channel，childOption 配接入连接。
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 3000)
+                // 客户端 handler 配自己的连接处理链，不使用服务端的 childHandler。
                 .handler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     protected void initChannel(SocketChannel socket) {
@@ -121,6 +151,8 @@ public final class LocalTcpLab implements AutoCloseable {
                         socket.pipeline().addLast(new SimpleChannelInboundHandler<String>() {
                             @Override
                             protected void channelRead0(ChannelHandlerContext context, String text) {
+                                // Netty ChannelHandlerContext：当前 handler 在 Pipeline 中的上下文，
+                                // 可访问 Channel、向后传播入站事件，或从当前位置发起写出、关闭等操作。
                                 LabSupport.log(device, "收到 " + text + " channel=" + socket.id().asShortText());
                                 // 普通 Java 方法调用不会切线程；在此直接等待 RPC 会占住 I/O。
                                 receiver.accept(text);
@@ -133,6 +165,7 @@ public final class LocalTcpLab implements AutoCloseable {
                             }
                         });
                     }
+                // Netty connect：异步连接目标服务，返回本次建连的 ChannelFuture；成功后再开始实验收发。
                 }).connect((InetSocketAddress) listener.localAddress());
         LabSupport.await(connecting);
         Channel channel = connecting.channel();
@@ -146,8 +179,13 @@ public final class LocalTcpLab implements AutoCloseable {
      * TCP 本身没有消息边界，一次 write 不保证对应一次 read，故分帧器不能省略。
      */
     private static void installTextCodec(ChannelPipeline pipeline) {
+        // Netty ChannelPipeline：每条 Channel 的处理器链，按方向把事件交给分帧器、编解码器和业务 handler。
+        // LineBasedFrameDecoder 是入站分帧组件：按换行切消息，解决 TCP 没有消息边界的问题。
         pipeline.addLast(new LineBasedFrameDecoder(1024));
+        // StringDecoder 是入站解码组件：将完整帧的 ByteBuf 字节转成 UTF-8 String。
         pipeline.addLast(new StringDecoder(CharsetUtil.UTF_8));
+        // StringEncoder 是出站编码组件：将 String 编成 UTF-8 字节；方向与入站处理相反。
+        // 这两个字符串编解码器不会自动补换行，所以发送方和回显方要明确添加结束符。
         pipeline.addLast(new StringEncoder(CharsetUtil.UTF_8));
     }
 
@@ -157,15 +195,23 @@ public final class LocalTcpLab implements AutoCloseable {
      * I/O 回调内应直接 writeAndFlush + listener，不能在这里等待同一 EventLoop。
      */
     public static void send(Channel channel, String text) throws Exception {
+        // Netty Channel.writeAndFlush：提交出站消息并请求刷新到底层传输，返回本地写操作的 Future。
         LabSupport.await(channel.writeAndFlush(text + "\n"));
     }
 
-    /** 返回唯一的客户端 EventLoop；next() 在单线程组中始终取到同一个执行器。 */
+    /**
+     * Netty EventLoop 是组内的单线程事件循环，可处理 I/O、普通任务和定时任务。
+     * 此方法返回唯一的客户端 EventLoop；next() 在单线程组中始终取到同一个执行器。
+     * 多线程组中 next() 会选择组成员，不能据此认定它就是某条连接的所有者；应使用 channel.eventLoop()。
+     */
     public EventLoop io() {
         return clientIo.next();
     }
 
-    /** 返回唯一的回调执行器；execute 入队立即返回，submit 还会返回任务的完成结果。 */
+    /**
+     * Netty EventExecutor 是执行任务的组件接口；本方法返回不处理 Socket I/O 的唯一回调执行器。
+     * execute 提交后返回，submit 还返回任务的完成结果；EventLoop 也属于 EventExecutor，但额外承担 I/O。
+     */
     public EventExecutor worker() {
         return callbacks.next();
     }
@@ -185,6 +231,7 @@ public final class LocalTcpLab implements AutoCloseable {
     public CompletableFuture<Void> shutdownClientAsync() {
         CompletableFuture<Void> ioStopped = new CompletableFuture<>();
         CompletableFuture<Void> workerStopped = new CompletableFuture<>();
+        // Netty shutdownGracefully：通知组内执行器完成退出流程，并返回可观察终止结果的 Future。
         // 0 是 quiet period，2 秒是 Netty 优雅退出参数，不是强行中断阻塞任务的保证。
         clientIo.shutdownGracefully(0, 2, TimeUnit.SECONDS).addListener(result -> {
             if (result.isSuccess()) {
