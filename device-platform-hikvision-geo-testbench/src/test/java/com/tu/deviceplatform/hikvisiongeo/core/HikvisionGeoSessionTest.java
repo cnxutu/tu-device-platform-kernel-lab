@@ -28,7 +28,7 @@ class HikvisionGeoSessionTest {
             @Override public String getBaseUrl() { return "http://127.0.0.1"; }
         };
         HikvisionGeoSession session = new HikvisionGeoSession(mapper, invoker,
-                new HikvisionCommandPreview(new com.xmkj.codec.adapter.uav.device.hikvision.xml.HikvisionXmlCodec()));
+                new HikvisionCommandPreview());
         try {
             session.importRequests(mapper.writeValueAsString(HikvisionGeoCoreTest.request("target_acquire")));
             ObjectNode options = mapper.createObjectNode();
@@ -71,7 +71,7 @@ class HikvisionGeoSessionTest {
             @Override public String getBaseUrl() { return "http://127.0.0.1"; }
         };
         HikvisionGeoSession session = new HikvisionGeoSession(mapper, invoker,
-                new HikvisionCommandPreview(new com.xmkj.codec.adapter.uav.device.hikvision.xml.HikvisionXmlCodec()));
+                new HikvisionCommandPreview());
         try {
             ObjectNode options = mapper.createObjectNode();
             options.put("direction", "E");
@@ -104,7 +104,7 @@ class HikvisionGeoSessionTest {
             @Override public String getBaseUrl() { return "http://127.0.0.1"; }
         };
         HikvisionGeoSession session = new HikvisionGeoSession(mapper, invoker,
-                new HikvisionCommandPreview(new com.xmkj.codec.adapter.uav.device.hikvision.xml.HikvisionXmlCodec()));
+                new HikvisionCommandPreview());
         try {
             ObjectNode options = mapper.createObjectNode();
             options.put("longitude", 120.0195387);
@@ -147,7 +147,7 @@ class HikvisionGeoSessionTest {
             @Override public String getBaseUrl() { return "http://127.0.0.1"; }
         };
         HikvisionGeoSession session = new HikvisionGeoSession(mapper, invoker,
-                new HikvisionCommandPreview(new com.xmkj.codec.adapter.uav.device.hikvision.xml.HikvisionXmlCodec()));
+                new HikvisionCommandPreview());
         try {
             session.importRequests(mapper.writeValueAsString(HikvisionGeoCoreTest.request("target_follow")));
             ObjectNode options = mapper.createObjectNode();

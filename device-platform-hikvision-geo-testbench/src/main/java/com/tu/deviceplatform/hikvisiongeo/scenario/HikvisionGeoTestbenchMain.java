@@ -5,7 +5,6 @@ import com.tu.deviceplatform.hikvisiongeo.adapter.HikvisionGeoTestbenchServer;
 import com.tu.deviceplatform.hikvisiongeo.adapter.P2ServiceClient;
 import com.tu.deviceplatform.hikvisiongeo.core.HikvisionCommandPreview;
 import com.tu.deviceplatform.hikvisiongeo.core.HikvisionGeoSession;
-import com.xmkj.codec.adapter.uav.device.hikvision.xml.HikvisionXmlCodec;
 
 import java.util.concurrent.CountDownLatch;
 
@@ -29,7 +28,7 @@ public final class HikvisionGeoTestbenchMain {
                 resolveP2BaseUrl(System.getenv("HIKVISION_GEO_P2_BASE_URL")),
                 System.getenv("HIKVISION_GEO_P2_AUTHORIZATION"));
         HikvisionGeoSession session = new HikvisionGeoSession(mapper, p2,
-                new HikvisionCommandPreview(new HikvisionXmlCodec()));
+                new HikvisionCommandPreview());
         try (HikvisionGeoTestbenchServer server = new HikvisionGeoTestbenchServer(mapper, session, port)) {
             Thread hook = new Thread(server::close, "hikvision-geo-testbench-shutdown");
             Runtime.getRuntime().addShutdownHook(hook);

@@ -14,11 +14,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.xmkj.sdk</groupId>
-            <artifactId>ad-iot-codec-adapter-uav-detection-hikvision</artifactId>
-            <version>2.5.0</version>
-        </dependency>
-        <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>2.13.5</version>

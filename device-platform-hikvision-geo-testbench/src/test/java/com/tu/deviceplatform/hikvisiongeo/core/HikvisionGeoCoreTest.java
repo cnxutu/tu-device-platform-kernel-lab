@@ -3,7 +3,6 @@ package com.tu.deviceplatform.hikvisiongeo.core;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.tu.deviceplatform.hikvisiongeo.core.GeoPointGenerator.Point;
-import com.xmkj.codec.adapter.uav.device.hikvision.xml.HikvisionXmlCodec;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -111,8 +110,8 @@ class HikvisionGeoCoreTest {
     }
 
     @Test
-    void previewUsesP4HikvisionGeoXmlMappingForBothOperations() {
-        HikvisionCommandPreview preview = new HikvisionCommandPreview(new HikvisionXmlCodec());
+    void previewUsesLocalHikvisionGeoXmlMappingForBothOperations() {
+        HikvisionCommandPreview preview = new HikvisionCommandPreview();
         ObjectNode acquire = request("target_acquire");
         ObjectNode follow = request("target_follow");
 
