@@ -6,6 +6,7 @@
 
 | 模块 | 责任 |
 | --- | --- |
+| `device-platform-netty-concurrency-lab` | 六个可独立调试的 Netty／并发实验：共享 EventLoop、回调卸载、定时序列、生命周期锁、旧回调隔离和完整关闭；见[运行说明](device-platform-netty-concurrency-lab/README.md)与[调试指南](device-platform-netty-concurrency-lab/docs/debugging-guide.md) |
 | `device-platform-thing-model` | 物模型能力定义、消息标准化、内核校验、协议适配与场景模拟 |
 | `device-platform-video-projection-replay` | 从 DJI DRC OSD 生成分片 SRT，并提供历史视频投影回放前端 Demo |
 | `device-platform-tofu-ms-simulator` | TOFU-MS 设备 TCP 模拟器，提供独立报文接收、心跳、属性与 ACK |
